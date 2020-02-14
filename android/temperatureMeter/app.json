@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Temperatura",
+    "slug": "temperatureMeter",
+    "privacy": "public",
+    "sdkVersion": "36.0.0",
+    "platforms": [
+      "android"
+    ],
+    "androidStatusBar": {
+      "backgroundColor": "#3ead57"
+    },
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3ead57"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
