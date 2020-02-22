@@ -4,9 +4,7 @@
     "slug": "temperatureMeter",
     "privacy": "public",
     "sdkVersion": "36.0.0",
-    "platforms": [
-      "android"
-    ],
+    "platforms": ["android"],
     "androidStatusBar": {
       "backgroundColor": "#3ead57"
     },
@@ -21,11 +19,18 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
+    },
+    "notification": {
+      "icon": "./assets/trayIcon.png",
+      "color": "#3ead57"
+    },
+    "android": {
+      "package": "com.Arciiix.temperatureMeter",
+      "googleServicesFile": "./google-services.json",
+      "backgroundColor": "#3ead57"
     }
   }
 }

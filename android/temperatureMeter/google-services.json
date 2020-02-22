@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "232696689459",
+    "firebase_url": "https://temperature-meter-100eb.firebaseio.com",
+    "project_id": "temperature-meter-100eb",
+    "storage_bucket": "temperature-meter-100eb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232696689459:android:c075e1744eefad090f8446",
+        "android_client_info": {
+          "package_name": "com.Arciiix.temperatureMeter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "232696689459-kqsunn1mvfre0dpu1nl9iknjf2lbdfqr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBb41oDYlxjgoXue-vKhs3kyOjLDMu7NYY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "232696689459-kqsunn1mvfre0dpu1nl9iknjf2lbdfqr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
