@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { createAppContainer } from "react-navigation";
 import { createStackNavigator } from "react-navigation-stack";
-import { api } from "./api.js";
 import { MaterialCommunityIcons, FontAwesome } from "@expo/vector-icons";
 import Icon from "./Icons.js";
 import { Notification } from "expo";
@@ -34,11 +33,11 @@ const style = StyleSheet.create({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: 90,
+    height: 70,
     width: 370
   },
   buttonText: {
-    fontSize: 37,
+    fontSize: 30,
     textAlign: "center",
     color: "white"
   },
@@ -84,7 +83,8 @@ class Home extends Component {
       isReady: false,
       loadingText: "",
       min: 19,
-      max: 24
+      max: 24,
+      minO: 15
     };
   }
   static navigationOptions = {
@@ -115,7 +115,7 @@ class Home extends Component {
         this.setState({ loadingText: "Błąd przy temperaturze pokoju" })
       );
 
-    //Get max and min temperature values
+    //Get max and min temperature values, and also ideal outside temperature
     fetch("http://192.168.0.120:5656/getTemp")
       .then(data => data.json())
       .then(data => {
@@ -123,6 +123,7 @@ class Home extends Component {
         this.setState({
           loadingText: "Pobrano ustawienia limitów temperatury"
         });
+        console.log(this.state);
         if (this.state.temperature > 0 && this.state.roomTemperature > 0) {
           this.setState({
             isReady: true
@@ -136,20 +137,11 @@ class Home extends Component {
       );
 
     //Get outside temperature
-    fetch(
-      "https://airapi.airly.eu/v2/measurements/point?lat=49.98844&lng=18.55807",
-      {
-        method: "get",
-        headers: {
-          apikey: api
-        }
-      }
-    )
-      .then(data => data.json())
+    fetch("http://192.168.0.120:5656/outsideTemp")
+      .then(data => data.text())
       .then(data => {
-        let last = data.current.values.length;
         this.setState({
-          temperature: data.current.values[last - 1].value,
+          temperature: parseInt(data),
           loadingText: "Pobrano temperaturę z zewnątrz"
         });
         if (this.state.roomTemperature > 0 && isTemperatureLimitsSet) {
@@ -215,6 +207,15 @@ class Home extends Component {
             >
               <Text style={style.buttonText}>Ustaw temperatury</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={style.button}
+              onPress={() =>
+                this.props.navigation.navigate("OutsideTemperature")
+              }
+            >
+              <Text style={style.buttonText}>Ustaw zewnątrzną temperaturę</Text>
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -238,7 +239,7 @@ class Home extends Component {
 
   colorTemp(temp, isOutside) {
     if (isOutside) {
-      if (temp < 10) {
+      if (temp < this.state.minO) {
         return "#25c2c4";
       } else {
         return "#3be11a";
@@ -334,10 +335,68 @@ class Temperature extends Component {
   }
 }
 
+class OutsideTemperature extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      temp: "15"
+    };
+  }
+
+  changeText(text) {
+    this.setState({
+      temp: text.replace(/[^0-9\.]/g, "")
+    });
+  }
+
+  setTemperature() {
+    fetch(`http://192.168.0.120:5656/setOutsideLimit?temp=${this.state.temp}`)
+      .then(data => data.text())
+      .then(data => {
+        if (data === "good") {
+          this.props.navigation.navigate("Home");
+        }
+      });
+  }
+
+  static navigationOptions = {
+    title: "Zmień temperaturę zewnętrzną",
+    headerStyle: {
+      backgroundColor: "#3ead57"
+    },
+    headerTintColor: "#ffffff",
+    headerTitleStyle: {
+      fontWeight: "bold"
+    }
+  };
+
+  render() {
+    return (
+      <View style={style.container}>
+        <Text style={style.inputsText}>Minimalna temperatura</Text>
+
+        <TextInput
+          keyboardType="numeric"
+          style={style.numberInput}
+          onChangeText={text => this.changeText(text)}
+          maxLength={5}
+        />
+
+        <TouchableOpacity
+          style={style.button}
+          onPress={this.setTemperature.bind(this)}
+        >
+          <Text style={style.buttonText}>Zmień</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+}
 const AppNavigator = createStackNavigator(
   {
     Home: Home,
-    Temperature: Temperature
+    Temperature: Temperature,
+    OutsideTemperature: OutsideTemperature
   },
   {
     initialRouteName: "Home"
