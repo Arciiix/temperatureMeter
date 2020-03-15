@@ -1,0 +1,21 @@
+body {
+  background-color: lightgray;
+}
+#content {
+  text-align: center;
+  font-family: "Roboto Condensed", sans-serif;
+}
+#header {
+  color: white;
+  font-size: 25vmin;
+}
+#text {
+  color: black;
+  font-size: 5vmin;
+}
+
+#face {
+  margin-top: 10vh;
+  width: 50vmin;
+  height: auto;
+}

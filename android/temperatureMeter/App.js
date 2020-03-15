@@ -83,7 +83,7 @@ class Home extends Component {
       isReady: false,
       loadingText: "",
       min: 19,
-      max: 24,
+      max: 23,
       minO: 15
     };
   }
@@ -92,66 +92,24 @@ class Home extends Component {
   };
 
   componentDidMount() {
-    let isTemperatureLimitsSet = false;
     this.setState({
       loadingText: "Wczytano komponenty"
     });
-
-    //Get in-room temperature
-    fetch("http://192.168.0.120:5656/temp")
-      .then(data => data.text())
-      .then(data => {
-        this.setState({
-          roomTemperature: +data,
-          loadingText: "Pobrano temperaturę pokoju"
-        });
-        if (this.state.temperature > 0 && isTemperatureLimitsSet) {
-          this.setState({
-            isReady: true
-          });
-        }
-      })
-      .catch(() =>
-        this.setState({ loadingText: "Błąd przy temperaturze pokoju" })
-      );
-
-    //Get max and min temperature values, and also ideal outside temperature
-    fetch("http://192.168.0.120:5656/getTemp")
+    //Get all data: in-room temperature, out-room temperature and max and min temperature values
+    fetch(`http://192.168.0.120:5656/getData`)
       .then(data => data.json())
       .then(data => {
-        this.setState(data);
         this.setState({
-          loadingText: "Pobrano ustawienia limitów temperatury"
+          roomTemperature: parseFloat(data.temperature),
+          min: parseFloat(data.limits.min),
+          max: parseFloat(data.limits.max),
+          minO: parseFloat(data.limits.minO),
+          temperature: parseFloat(data.outsideTemperature),
+          isReady: true
         });
-        console.log(this.state);
-        if (this.state.temperature > 0 && this.state.roomTemperature > 0) {
-          this.setState({
-            isReady: true
-          });
-        } else {
-          isTemperatureLimitsSet = true;
-        }
       })
-      .catch(() =>
-        this.setState({ loadingText: "Błąd przy limitach temperatury" })
-      );
-
-    //Get outside temperature
-    fetch("http://192.168.0.120:5656/outsideTemp")
-      .then(data => data.text())
-      .then(data => {
-        this.setState({
-          temperature: parseInt(data),
-          loadingText: "Pobrano temperaturę z zewnątrz"
-        });
-        if (this.state.roomTemperature > 0 && isTemperatureLimitsSet) {
-          this.setState({
-            isReady: true
-          });
-        }
-      })
-      .catch(() =>
-        this.setState({ loadingText: "Błąd przy temperaturze zewnętrznej" })
+      .catch(err =>
+        this.setState({ loadingText: "Błąd przy pobieraniu danych" })
       );
   }
 

@@ -1,0 +1,32 @@
+body {
+  background-color: #eee7e7;
+}
+
+.chart-area {
+  display: flex;
+  max-height: 38vh;
+  height: 38vh;
+}
+
+.chart {
+  width: 45vw;
+}
+
+@media only screen and (max-width: 991px) {
+  .chart {
+    width: 95vw;
+  }
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-center span {
+  text-align: center;
+  font-family: "Open Sans", sans-serif;
+  font-size: 7vmin;
+  color: lightgreen;
+  -webkit-text-stroke: 0.75px black;
+  opacity: 0;
+}

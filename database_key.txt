@@ -1,0 +1,4 @@
+inroom_c - chwilowa w pokoju
+inroom_d - dzienna w pokoju
+outroom_c - chwilowa na zewnątrz
+outroom_d - dzienna na zewnątrz

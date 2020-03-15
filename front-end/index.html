@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Temperatura</title>
+    <link rel="stylesheet" type="text/css" href="/style/index.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="/style/bootstrap-grid.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12 text-center">
+          <span id="tempInside">W pokoju:</span>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="chart-area">
+            <div id="chart-inroom-curr" class="chart"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="chart-area">
+            <div id="chart-inroom-daily" class="chart"></div>
+          </div>
+        </div>
+        <div class="col-12 text-center">
+          <span id="tempOutside">Na zewnątrz:</span>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="chart-area">
+            <div id="chart-outroom-curr" class="chart"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="chart-area">
+            <div id="chart-outroom-daily" class="chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="scripts/apexcharts.js"></script>
+    <script src="scripts/chart.js"></script>
+    <script src="scripts/temperature.js"></script>
+  </body>
+</html>

@@ -8,8 +8,25 @@ const port = 5656;
 const fetch = require("node-fetch");
 const { Expo } = require("expo-server-sdk");
 
+const cors = require("cors");
+app.use(cors());
+
 let expo = new Expo();
 
+//Database
+const sqlite3 = require("sqlite3").verbose();
+
+let db = new sqlite3.Database("./db.db", err => {
+  if (err) {
+    console.log(
+      `[${formatDate(new Date())}] Error while connecting to the database`
+    );
+  } else {
+    console.log(`[${formatDate(new Date())}] Connected to the database`);
+  }
+});
+
+let rowsTable = [];
 let token = "";
 
 let temperature = 0;
@@ -17,6 +34,10 @@ outsideTemp = 0;
 
 let alert = "normal";
 let outsideAlert = false; //false - it's bad, true - it's good
+
+//Arrays for average value of temperatures
+let averageOut = new Array();
+let averageIn = new Array();
 
 let temperatures = {
   min: 19, //minimum inside
@@ -50,10 +71,6 @@ app.get("/token", (req, res, next) => {
   }
 });
 
-app.get("/temp", (req, res, next) => {
-  res.send(temperature.toString());
-});
-
 app.get("/setTemp", (req, res, next) => {
   temperatures.min = +req.query.min;
   temperatures.max = +req.query.max;
@@ -65,12 +82,13 @@ app.get("/setTemp", (req, res, next) => {
   );
 });
 
-app.get("/outsideTemp", (req, res, next) => {
-  res.send(outsideTemp.toString());
-});
-
-app.get("/getTemp", (req, res, next) => {
-  res.send(JSON.stringify(temperatures));
+app.get("/getData", (req, res, next) => {
+  let obj = {
+    temperature: temperature.toString(),
+    outsideTemperature: outsideTemp.toString(),
+    limits: temperatures
+  };
+  res.send(JSON.stringify(obj));
 });
 
 app.get("/setOutsideLimit", (req, res, next) => {
@@ -82,6 +100,34 @@ app.get("/setOutsideLimit", (req, res, next) => {
   );
   res.send("good");
 });
+
+//Database data send
+app.get("/readDB", async (req, res, next) => {
+  rowsTable = [];
+  await readFromDB("inroom_d");
+  await readFromDB("inroom_c");
+  await readFromDB("outroom_d");
+  await readFromDB("outroom_c");
+  setTimeout(() => {
+    let obj = {};
+    obj.insideD = rowsTable[0];
+    obj.insideC = rowsTable[1];
+    obj.outsideD = rowsTable[2];
+    obj.outsideC = rowsTable[3];
+    res.send(obj);
+  }, 1000);
+});
+
+function readFromDB(tableName) {
+  let sql = `SELECT * FROM ${tableName}`;
+
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    rowsTable.push(rows);
+  });
+}
 
 function getTempInside() {
   fetch("http://192.168.0.115/getInfo")
@@ -105,6 +151,7 @@ function getTempInside() {
       parsed = parsed.split(" "); //Making the data an array
       //We need temperature, so it is 3th, so [2]
       temperature = parsed[2];
+      averageIn.push(temperature);
       sendPush(temperature);
     });
 }
@@ -169,7 +216,10 @@ function getOutsideTemp() {
     .then(data => {
       let lastElem = data.current.values.length;
       outsideTemp = data.current.values[lastElem - 1].value;
+      averageOut.push(outsideTemp);
       sendPushOutside(outsideTemp);
+      //Saving current temperatures to the database
+      addTemps();
     })
     .catch(err => {
       console.error(
@@ -210,9 +260,6 @@ function formatDate(date) {
   }.${date.getFullYear()}`;
 }
 
-//
-outsideTemp = 5;
-
 app.listen(port, () => console.log(`Server started at port ${port}!`));
 
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
@@ -224,12 +271,79 @@ setInterval(() => {
     nightMode = true;
     clearInterval(insideInterval);
     clearInterval(outsideInterval);
+    //Average of outside temp
+    let averageOutside = average(averageOut);
+    let averageInside = average(averageIn);
+    averageIn = [];
+    averageOut = [];
+    let date = new Date();
+    let currDate = `${
+      date.getDate() < 10 ? "0" + date.getDate() : date.getDate()
+    }.${
+      date.getMonth() + 1 < 10
+        ? "0" + (date.getMonth() + 1)
+        : date.getMonth() + 1
+    }.${date.getFullYear()}`;
+    insert("inroom_d", averageInside, currDate);
+    insert("outroom_d", averageOutside, currDate);
     console.log(`[${formatDate(new Date())}] Night mode has started!`);
   } else if (currDate.getHours() == nightHours.end && nightMode) {
     nightMode = false;
+    db.run(`DELETE FROM inroom_c`, [], err => {
+      if (err) {
+        return console.log(
+          `[${formatDate(
+            new Date()
+          )}] Error while trying to delete rows from the table!`
+        );
+      }
+      console.log(`[${formatDate(new Date())}] Deleted rows from the table!`);
+    });
+    db.run(`DELETE FROM outroom_c`, [], err => {
+      if (err) {
+        return console.log(
+          `[${formatDate(
+            new Date()
+          )}] Error while trying to delete rows from the table!`
+        );
+      }
+      console.log(`[${formatDate(new Date())}] Deleted rows from the table!`);
+    });
     insideInterval = setInterval(getTempInside, refreshRate * 1000);
     outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
     console.log(`[${formatDate(new Date())}] Night mode has ended!`);
   }
-}),
-  60000;
+}, 60000);
+
+function average(table) {
+  let sum = table.reduce((last, curr) => parseFloat(last) + parseFloat(curr));
+  let average = (sum / table.length).toFixed(2);
+  return average;
+}
+
+async function addTemps() {
+  let date = new Date();
+  let currDate = `${
+    date.getHours() < 10 ? "0" + date.getHours() : date.getHours()
+  }:${date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()}`;
+
+  await insert("inroom_c", temperature, currDate);
+  await insert("outroom_c", outsideTemp, currDate);
+}
+
+function insert(tableName, temp, date) {
+  db.run(
+    `INSERT INTO ${tableName} (id, temp, date) VALUES(?, ?, ?)`,
+    [null, parseFloat(temp), date],
+    err => {
+      if (err) {
+        return console.log(
+          `[${formatDate(
+            new Date()
+          )}] Error while trying to add a row to the table!`
+        );
+      }
+      console.log(`[${formatDate(new Date())}] Added a row to the table!`);
+    }
+  );
+}
