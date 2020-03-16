@@ -52,6 +52,7 @@ const nightHours = {
 
 let insideInterval, outsideInterval;
 
+let shouldOverwrite = false;
 let nightMode = false;
 
 const api = require("./api.js");
@@ -260,8 +261,6 @@ function formatDate(date) {
   }.${date.getFullYear()}`;
 }
 
-app.listen(port, () => console.log(`Server started at port ${port}!`));
-
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
 outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
 
@@ -289,26 +288,6 @@ setInterval(() => {
     console.log(`[${formatDate(new Date())}] Night mode has started!`);
   } else if (currDate.getHours() == nightHours.end && nightMode) {
     nightMode = false;
-    db.run(`DELETE FROM inroom_c`, [], err => {
-      if (err) {
-        return console.log(
-          `[${formatDate(
-            new Date()
-          )}] Error while trying to delete rows from the table!`
-        );
-      }
-      console.log(`[${formatDate(new Date())}] Deleted rows from the table!`);
-    });
-    db.run(`DELETE FROM outroom_c`, [], err => {
-      if (err) {
-        return console.log(
-          `[${formatDate(
-            new Date()
-          )}] Error while trying to delete rows from the table!`
-        );
-      }
-      console.log(`[${formatDate(new Date())}] Deleted rows from the table!`);
-    });
     insideInterval = setInterval(getTempInside, refreshRate * 1000);
     outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
     console.log(`[${formatDate(new Date())}] Night mode has ended!`);
@@ -329,6 +308,18 @@ async function addTemps() {
 
   await insert("inroom_c", temperature, currDate);
   await insert("outroom_c", outsideTemp, currDate);
+  if (shouldOverwrite) {
+    await db.run(
+      `DELETE FROM inroom_c WHERE id IN (SELECT id FROM inroom_c LIMIT 1)`
+    );
+
+    await db.run(
+      `DELETE FROM outroom_c WHERE id IN (SELECT id FROM outroom_c LIMIT 1)`
+    );
+    console.log(
+      `[${formatDate(new Date())}] Deleted first rows of current temperature`
+    );
+  }
 }
 
 function insert(tableName, temp, date) {
@@ -347,3 +338,24 @@ function insert(tableName, temp, date) {
     }
   );
 }
+function checkForOverwrite() {
+  let sql = `
+  SELECT COUNT(id) FROM inroom_c;`;
+  db.all(sql, [], (err, data) => {
+    if (err) {
+      throw err;
+    }
+    if (data[0]["COUNT(id)"] > 143) {
+      shouldOverwrite = true;
+    } else {
+      shouldOverwrite = false;
+    }
+  });
+}
+
+checkForOverwrite();
+
+app.listen(port, () => {
+  //App is ready
+  console.log(`Server started at port ${port}!`);
+});
