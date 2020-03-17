@@ -1,8 +1,8 @@
-function createChart(divName, data, dates) {
-  var options = {
+async function createChart(divName, data, dates, color) {
+  let chart = await new ApexCharts(document.getElementById(divName), {
     series: [
       {
-        name: "Przykładowa wartość",
+        name: "Temperatura",
         data: data
       }
     ],
@@ -14,6 +14,7 @@ function createChart(divName, data, dates) {
     dataLabels: {
       enabled: false
     },
+    colors: [color],
     stroke: {
       curve: "smooth"
     },
@@ -22,16 +23,9 @@ function createChart(divName, data, dates) {
       labels: {
         show: false
       }
-    },
-    tooltip: {
-      x: {
-        format: "dd/MM/yy HH:mm"
-      }
     }
-  };
-
-  var chart = new ApexCharts(document.getElementById(divName), options);
-  chart.render();
+  });
+  return chart.render();
 }
 
 fetch("http://192.168.0.120:5656/readDB")
@@ -40,21 +34,25 @@ fetch("http://192.168.0.120:5656/readDB")
     await createChart(
       "chart-inroom-curr",
       data.insideC.map(e => e.temp),
-      data.insideC.map(e => e.date)
+      data.insideC.map(e => e.date),
+      "#39d428"
     );
     await createChart(
       "chart-inroom-daily",
       data.insideD.map(e => e.temp),
-      data.insideD.map(e => e.date)
-    );
-    await createChart(
-      "chart-outroom-curr",
-      data.outsideC.map(e => e.temp),
-      data.outsideC.map(e => e.date)
-    );
+      data.insideD.map(e => e.date),
+      "#249c17"
+    ),
+      await createChart(
+        "chart-outroom-curr",
+        data.outsideC.map(e => e.temp),
+        data.outsideC.map(e => e.date),
+        "#2ac5e8"
+      );
     await createChart(
       "chart-outroom-daily",
       data.outsideD.map(e => e.temp),
-      data.outsideD.map(e => e.date)
+      data.outsideD.map(e => e.date),
+      "#2a7adb"
     );
   });

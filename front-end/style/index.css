@@ -5,7 +5,7 @@ body {
 .chart-area {
   display: flex;
   max-height: 38vh;
-  height: 38vh;
+  height: 37vh;
 }
 
 .chart {
@@ -29,4 +29,19 @@ body {
   color: lightgreen;
   -webkit-text-stroke: 0.75px black;
   opacity: 0;
+}
+
+#key {
+  display: flex;
+  flex-direction: row;
+  font-size: 2vmin;
+  font-family: "Open Sans", sans-serif;
+  justify-content: center;
+  line-height: 2vmin;
+}
+
+.colors {
+  width: 5vw;
+  height: 2vmin;
+  margin: 0 1vw;
 }
