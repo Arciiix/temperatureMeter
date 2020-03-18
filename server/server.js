@@ -122,11 +122,15 @@ app.get("/readDB", async (req, res, next) => {
 function readFromDB(tableName) {
   let sql = `SELECT * FROM ${tableName}`;
 
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    rowsTable.push(rows);
+  return new Promise((resolve, reject) => {
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        reject();
+        throw err;
+      }
+      rowsTable.push(rows);
+      resolve();
+    });
   });
 }
 
