@@ -312,6 +312,7 @@ async function addTemps() {
 
   await insert("inroom_c", temperature, currDate);
   await insert("outroom_c", outsideTemp, currDate);
+  await checkForOverwrite();
   if (shouldOverwrite) {
     await db.run(
       `DELETE FROM inroom_c WHERE id IN (SELECT id FROM inroom_c LIMIT 1)`
@@ -345,15 +346,19 @@ function insert(tableName, temp, date) {
 function checkForOverwrite() {
   let sql = `
   SELECT COUNT(id) FROM inroom_c;`;
-  db.all(sql, [], (err, data) => {
-    if (err) {
-      throw err;
-    }
-    if (data[0]["COUNT(id)"] > 143) {
-      shouldOverwrite = true;
-    } else {
-      shouldOverwrite = false;
-    }
+  return new Promise((resolve, reject) => {
+    db.all(sql, [], (err, data) => {
+      if (err) {
+        reject();
+        throw err;
+      }
+      if (data[0]["COUNT(id)"] > 143) {
+        shouldOverwrite = true;
+      } else {
+        shouldOverwrite = false;
+      }
+      resolve();
+    });
   });
 }
 
