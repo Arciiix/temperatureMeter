@@ -1,5 +1,5 @@
 const refreshRate = 60; //in seconds, time between temperature measurements
-const outsideRefreshRate = 15; //in minutes, time between OUTSIDE temperature mesurements
+const outsideRefreshRate = 15; //in minutes, time between OUTSIDE temperature measurements and savings to the database
 
 const express = require("express");
 const app = express();
@@ -16,7 +16,7 @@ let expo = new Expo();
 //Database
 const sqlite3 = require("sqlite3").verbose();
 
-let db = new sqlite3.Database("./db.db", err => {
+let db = new sqlite3.Database("./db.db", (err) => {
   if (err) {
     console.log(
       `[${formatDate(new Date())}] Error while connecting to the database`
@@ -42,20 +42,25 @@ let averageIn = new Array();
 let temperatures = {
   min: 19, //minimum inside
   max: 24, //maximum inside
-  minO: 15 //ideal minimum outside
+  minO: 15, //ideal minimum outside
 };
 
+/*
 const nightHours = {
   start: 22,
   end: 10
 };
+*/
 
-let insideInterval, outsideInterval;
+const savingAverageTempHour = 22;
+let didSaveTheAverageTemp = false;
+
+let insideInterval, outsideInterval, savingInterval;
 
 let shouldOverwrite = false;
-let nightMode = false;
+//let nightMode = false;
 
-const api = require("./api.js");
+//const api = require("./api.js");
 
 app.get("/token", (req, res, next) => {
   if (!Expo.isExpoPushToken(req.query.token)) {
@@ -87,7 +92,7 @@ app.get("/getData", (req, res, next) => {
   let obj = {
     temperature: temperature.toString(),
     outsideTemperature: outsideTemp.toString(),
-    limits: temperatures
+    limits: temperatures,
   };
   res.send(JSON.stringify(obj));
 });
@@ -136,8 +141,8 @@ function readFromDB(tableName) {
 
 function getTempInside() {
   fetch("http://192.168.0.115/getInfo")
-    .then(data => data.text())
-    .then(data => {
+    .then((data) => data.text())
+    .then((data) => {
       let spanStart = data.indexOf("<span>") + 4; //When the infomation starts
       let spanEnd = data.indexOf("</span>"); //When the information ends
       let parsed;
@@ -182,8 +187,8 @@ function sendPush(temp) {
           body:
             alert === "cold"
               ? "Temperatura w pokoju jest zbyt mała!"
-              : "Temperatura w pokoju jest zbyt duża!"
-        }
+              : "Temperatura w pokoju jest zbyt duża!",
+        },
       ];
       send(message);
     }
@@ -208,6 +213,7 @@ function send(message) {
 }
 
 function getOutsideTemp() {
+  /*
   fetch(
     "https://airapi.airly.eu/v2/measurements/point?lat=49.98844&lng=18.55807",
     {
@@ -231,6 +237,19 @@ function getOutsideTemp() {
         `[${formatDate(new Date())}] Error while getting outside temperature`
       );
     });
+    */
+  fetch(`http://10.249.20.150:8080/json.htm?type=devices&rid=33`) //Local temperature sensor in domoticz
+    .then((data) => data.json())
+    .then((data) => {
+      outsideTemp = parseFloat(data.result[0].Temp).toFixed(2);
+      averageOut.push(outsideTemp);
+      sendPushOutside(outsideTemp);
+    })
+    .catch((err) => {
+      console.error(
+        `[${formatDate(new Date())}] Error while getting outside temperature`
+      );
+    });
 }
 
 function sendPushOutside(temp) {
@@ -247,8 +266,8 @@ function sendPushOutside(temp) {
         {
           to: token,
           sound: "default",
-          body: "Temperatura na dworze jest idealna!"
-        }
+          body: "Temperatura na dworze jest idealna!",
+        },
       ];
       send(message);
     }
@@ -267,14 +286,13 @@ function formatDate(date) {
 
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
 outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
+savingInterval = setInterval(addTemps, outsideRefreshRate * 60000);
 
 setInterval(() => {
   let currDate = new Date();
-  if (currDate.getHours() == nightHours.start && !nightMode) {
-    nightMode = true;
-    clearInterval(insideInterval);
-    clearInterval(outsideInterval);
-    //Average of outside temp
+  if (currDate.getHours() == savingAverageTempHour && !didSaveTheAverageTemp) {
+    didSaveTheAverageTemp = true;
+    //Average of the outside temp
     let averageOutside = average(averageOut);
     let averageInside = average(averageIn);
     averageIn = [];
@@ -289,12 +307,12 @@ setInterval(() => {
     }.${date.getFullYear()}`;
     insert("inroom_d", averageInside, currDate);
     insert("outroom_d", averageOutside, currDate);
-    console.log(`[${formatDate(new Date())}] Night mode has started!`);
-  } else if (currDate.getHours() == nightHours.end && nightMode) {
-    nightMode = false;
-    insideInterval = setInterval(getTempInside, refreshRate * 1000);
-    outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
-    console.log(`[${formatDate(new Date())}] Night mode has ended!`);
+    console.log(
+      `[${formatDate(new Date())}] Saved the daily temperature average!`
+    );
+    setTimeout(() => {
+      didSaveTheAverageTemp = false;
+    }, 3600000);
   }
 }, 60000);
 
@@ -331,7 +349,7 @@ function insert(tableName, temp, date) {
   db.run(
     `INSERT INTO ${tableName} (id, temp, date) VALUES(?, ?, ?)`,
     [null, parseFloat(temp), date],
-    err => {
+    (err) => {
       if (err) {
         return console.log(
           `[${formatDate(
@@ -352,7 +370,7 @@ function checkForOverwrite() {
         reject();
         throw err;
       }
-      if (data[0]["COUNT(id)"] > 143) {
+      if (data[0]["COUNT(id)"] > 288) {
         shouldOverwrite = true;
       } else {
         shouldOverwrite = false;
