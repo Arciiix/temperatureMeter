@@ -286,7 +286,7 @@ function formatDate(date) {
 
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
 outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
-savingInterval = setInterval(addTemps, outsideRefreshRate * 60000);
+savingInterval = setInterval(addTemps, outsideRefreshRate * 60000 + 5000); //Give the outside temperature fetch some time
 
 setInterval(() => {
   let currDate = new Date();
