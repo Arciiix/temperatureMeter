@@ -241,7 +241,15 @@ function getOutsideTemp() {
   fetch(`http://10.249.20.150:8080/json.htm?type=devices&rid=33`) //Local temperature sensor in domoticz
     .then((data) => data.json())
     .then((data) => {
-      outsideTemp = parseFloat(data.result[0].Temp).toFixed(2);
+      if (!data.result) {
+        return console.error(
+          `[${formatDate(new Date())}] Error while getting outside temperature`
+        );
+      }
+      let currOutsideTemp = parseFloat(data.result[0].Temp).toFixed(2);
+      if (!isNan(currOutsideTemp) && currOutsideTemp !== 0) {
+        outsideTemp = currOutsideTemp;
+      }
       averageOut.push(outsideTemp);
       sendPushOutside(outsideTemp);
     })
