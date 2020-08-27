@@ -332,9 +332,9 @@ function average(table) {
 
 async function addTemps() {
   let date = new Date();
-  let currDate = `${
-    date.getHours() < 10 ? "0" + date.getHours() : date.getHours()
-  }:${date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()}`;
+  let currDate = `${new Date()
+    .toLocaleTimeString("PL-pl")
+    .slice(0, -3)} ${new Date().toLocaleDateString("PL-pl")}`;
 
   await insert("inroom_c", temperature, currDate);
   await insert("outroom_c", outsideTemp, currDate);
