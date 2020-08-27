@@ -243,11 +243,13 @@ function getOutsideTemp() {
     .then((data) => {
       if (!data.result) {
         return console.error(
-          `[${formatDate(new Date())}] Error while getting outside temperature`
+          `[${formatDate(
+            new Date()
+          )}] Error while getting outside temperature - the JSON output is not valid`
         );
       }
       let currOutsideTemp = parseFloat(data.result[0].Temp).toFixed(2);
-      if (!isNan(currOutsideTemp) && currOutsideTemp !== 0) {
+      if (!isNaN(currOutsideTemp) && currOutsideTemp !== 0) {
         outsideTemp = currOutsideTemp;
       }
       averageOut.push(outsideTemp);
@@ -255,7 +257,9 @@ function getOutsideTemp() {
     })
     .catch((err) => {
       console.error(
-        `[${formatDate(new Date())}] Error while getting outside temperature`
+        `[${formatDate(
+          new Date()
+        )}] Error while getting outside temperature: ${err}`
       );
     });
 }
@@ -294,7 +298,7 @@ function formatDate(date) {
 
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
 outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
-savingInterval = setInterval(addTemps, outsideRefreshRate * 60000 + 5000); //Give the outside temperature fetch some time
+savingInterval = setInterval(addTemps, outsideRefreshRate * 60000 + 10000); //Give the outside temperature fetch some time
 
 setInterval(() => {
   let currDate = new Date();
@@ -332,9 +336,13 @@ function average(table) {
 
 async function addTemps() {
   let date = new Date();
-  let currDate = `${new Date()
-    .toLocaleTimeString("PL-pl")
-    .slice(0, -3)} ${new Date().toLocaleDateString("PL-pl")}`;
+  let currDate = `${
+    date.getHours() < 10 ? "0" + date.getHours() : date.getHours()
+  }:${date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes()} ${
+    date.getDate() < 10 ? "0" + date.getDate() : date.getDate()
+  }.${
+    date.getMonth() + 1 < 10 ? "0" + (date.getMonth() + 1) : date.getMonth() + 1
+  }.${date.getFullYear()}`;
 
   await insert("inroom_c", temperature, currDate);
   await insert("outroom_c", outsideTemp, currDate);
