@@ -1,5 +1,5 @@
 const refreshRate = 60; //in seconds, time between temperature measurements
-const outsideRefreshRate = 15; //in minutes, time between OUTSIDE temperature measurements and savings to the database
+Re4plconst outsideRefreshRate = 2; //in minutes, time between OUTSIDE temperature measurements
 
 const express = require("express");
 const app = express();
@@ -7,6 +7,8 @@ const port = 5656;
 
 const fetch = require("node-fetch");
 const { Expo } = require("expo-server-sdk");
+
+const schedule = require("node-schedule");
 
 const cors = require("cors");
 app.use(cors());
@@ -298,7 +300,13 @@ function formatDate(date) {
 
 insideInterval = setInterval(getTempInside, refreshRate * 1000);
 outsideInterval = setInterval(getOutsideTemp, outsideRefreshRate * 60000);
+savingInterval = schedule.scheduleJob("0,15,30,45 * * * *", () => {
+  addTemps();
+});
+/*
 savingInterval = setInterval(addTemps, outsideRefreshRate * 60000 + 10000); //Give the outside temperature fetch some time
+Deprecated - the temperature save times are setwith the cron job expression
+*/
 
 setInterval(() => {
   let currDate = new Date();
@@ -397,6 +405,10 @@ function checkForOverwrite() {
 }
 
 checkForOverwrite();
+
+//Fetch the temperatures on init
+getOutsideTemp();
+getTempInside();
 
 app.listen(port, () => {
   //App is ready
